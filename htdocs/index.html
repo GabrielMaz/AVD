@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Leaflet</title>
+    <script src="jquery-3.3.1.js"></script>
+    <link rel="stylesheet" href="styles2.css" />
+    <link rel="stylesheet" href="leaflet/leaflet.css" />
+    <script src="leaflet/leaflet.js"></script>
+  </head>
+
+  <body>
+    <div id="map-container"></div>
+    <div class="escalas"><div style="background-color:#FFEDA0"></div></div>
+
+    <!--
+      div></div>
+
+      <i style="background:#FFEDA0"></i> 0–10<br /><i
+        style="background:#FED976"
+      ></i>
+      10–20<br /><i style="background:#FEB24C"></i> 20–50<br /><i
+        style="background:#FD8D3C"
+      ></i>
+      50–100<br /><i style="background:#FC4E2A"></i> 100–200<br /><i
+        style="background:#E31A1C"
+      ></i>
+      200–500<br /><i style="background:#BD0026"></i> 500–1000<br /><i
+        style="background:#800026"
+      ></i>
+      1000+
+    -->
+  </body>
+  <script>
+    var info;
+    jQuery(document).ready(function($) {
+      var mymap = L.map("map-container").setView([-32.627054, -55.945432], 7);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          "Map data &copy; <a href='http://openstreetmap.org'>OpenStreetMap</a>",
+        maxZoom: 18,
+        id: "map-container"
+      }).addTo(mymap);
+      var customLayer = L.geoJson(null, {
+        // http://leafletjs.com/reference.html#geojson-style
+        style: function(feature) {
+          return {
+            color: "#f00"
+          };
+        }
+      });
+
+      // Control
+      var legend = L.control({ position: "bottomright" });
+
+      legend.onAdd = function(map) {
+        var div = L.DomUtil.create("div", "info legend"),
+          grades = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8],
+          labels = [],
+          from,
+          to;
+
+        for (var i = 0; i < grades.length; i++) {
+          from = grades[i];
+          to = grades[i + 1];
+
+          labels.push(
+            '<div style="height: 10px; width: 10px; display: inline-block; background: ' +
+              getColor(from) +
+              '"></div> ' +
+              from +
+              (to ? "&ndash;" + to : "+")
+          );
+        }
+
+        div.innerHTML = labels.join("<br>");
+        return div;
+      };
+
+      legend.addTo(mymap);
+      info = L.control({ position: "topright" });
+      console.log(info);
+
+      info.onAdd = function(mymap) {
+        this._div = L.DomUtil.create("div", "info"); // create a div with a class "info"
+        this.update();
+        return this._div;
+      };
+
+      // method that we will use to update the control based on feature properties passed
+      info.update = function(props) {
+        this._div.innerHTML =
+          // if (props) show info of depto, else show hover message
+          props
+            ? '<h1 class="title">' +
+              props.nombre +
+              "</h1>" +
+              '<div class="subtitle">Indice: ' +
+              props.INDICE +
+              "</div>" +
+              '<div class="title">' +
+              '<div class="subtitle">Esperanza: ' +
+              props.esperanza +
+              " años</div>" +
+              '<div class="title">' +
+              '<div class="subtitle">Natalidad: ' +
+              props.natalidad +
+              " cada 1000 personas</div>" +
+              '<div class="title">' +
+              '<div class="subtitle">Mortalidad: ' +
+              props.mortalidad +
+              " cada 1000 personas</div>"
+            : // else
+              '<h2 class="title">Pasa sobre un departamento</h2>';
+      };
+
+      info.addTo(mymap);
+
+      $.getJSON("/capas/deptos_indice.geojson", function(layer) {
+        geojson = L.geoJson(layer, {
+          onEachFeature: onEachFeature,
+          style: style
+        }).addTo(mymap);
+      });
+    });
+
+    function getColor(d) {
+      return d > 0.8
+        ? "#800026"
+        : d > 0.75
+        ? "#BD0026"
+        : d > 0.7
+        ? "#E31A1C"
+        : d > 0.65
+        ? "#FC4E2A"
+        : d > 0.6
+        ? "#FD8D3C"
+        : d > 0.55
+        ? "#FEB24C"
+        : d > 0.5
+        ? "#FED976"
+        : "#FFEDA0";
+    }
+
+    function style(feature) {
+      return {
+        fillColor: getColor(feature.properties.INDICE),
+        weight: 2,
+        opacity: 1,
+        color: "white",
+        dashArray: "3",
+        fillOpacity: 0.7
+      };
+    }
+
+    function highlightFeature(e) {
+      var layer = e.target;
+
+      layer.setStyle({
+        weight: 3,
+        color: "#56ff00",
+        dashArray: "",
+        fillOpacity: 0.7
+      });
+
+      if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        layer.bringToFront();
+      }
+
+      info.update(layer.feature.properties);
+    }
+
+    function resetHighlight(e) {
+      geojson.resetStyle(e.target);
+      info.update();
+    }
+
+    function onEachFeature(feature, layer) {
+      layer.on({
+        mouseover: highlightFeature,
+        mouseout: resetHighlight
+      });
+    }
+  </script>
+</html>

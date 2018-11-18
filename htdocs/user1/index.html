@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Leaflet</title>
+    <script src="jquery-3.3.1.js"></script>
+    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="leaflet/leaflet.css" />
+    <script src="leaflet/leaflet.js"></script>
+    <script src='//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
+  </head>
+  <body>
+    <div id="map-container"></div>
+    <div id='resultados'><h2>Resumen de resultados</h2></div>
+  </body>
+  <script>
+    jQuery(document).ready(function($){
+      var mymap = L.map('map-container').setView([-32.753018, -56.182884], 7);
+  	    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "Map data &copy; <a href=\'http://openstreetmap.org\'>OpenStreetMap</a>",
+          maxZoom: 18,
+          id: "map-container",
+        }).addTo(mymap);
+	      //console.log(mujeres.features);
+	      console.log("PASA");
+	      //setTimeout(function(){mymap.invalidateSize(); mymap.setView([lat, lon], 13);},1000);
+        var customLayer = L.geoJson(null, {
+          // http://leafletjs.com/reference.html#geojson-style
+          style: function(feature) {
+            return {
+                color: '#f00'
+            };
+          }
+        });
+        //Librería omnivore
+        omnivore.kml('http://user1.itsu.com.uy/capas/tomas_superficiales_OSE.kml').addTo(mymap)
+          .on('error', function(error) {
+            console.log(error);
+          })
+          .on('ready', function(layer) {
+            /**** CUSTOMIZACIÓN ***/
+            var i = 1;
+            var first_marker_pos;
+            //BASE PARA ÍCONOS
+            var rioIcons = {
+              iconUrl: 'map_icons/rios.png',
+              //shadowUrl: 'icons/leaf-shadow.png',
+
+              iconSize:     [38, 38], // size of the icon
+              //shadowSize:   [50, 64], // size of the shadow
+              iconAnchor:   [19, 19], // point of the icon which will correspond to marker's location
+              //shadowAnchor: [4, 62],  // the same for the shadow
+              popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+            };
+            var rios_cerca = 0;
+            var rios = 0;
+            this.eachLayer(function(marker) {
+              var markerJson = marker.toGeoJSON();
+              //console.log(markerJson);
+              //POPUP
+              var marker_popup = '<div class="popup-header">' + markerJson.properties.region + ' ' + markerJson.properties.seccion + '</div><div class="popup-body">' +markerJson.properties.fuente + ' ' + markerJson.properties.usina + '</div>';
+              if (markerJson.properties.fuente === 'RIO') {
+                rios++;
+                //Position
+                var current_marker_pos = L.latLng(markerJson.geometry.coordinates);
+                //First marker rio
+                if ( i ) {
+                  i = 0;
+                  first_marker_pos = current_marker_pos;
+                  rioIcons.iconUrl = 'map_icons/rios_first.png'
+                  var rioIcon = L.icon(rioIcons);
+                }
+                else {
+                  rioIcons.iconUrl = 'map_icons/rios.png'
+                  var rioIcon = L.icon(rioIcons);
+                }
+                //Distance to other rio markers metros
+                var distance2first = current_marker_pos.distanceTo(first_marker_pos);
+                //Pasaje a KM
+                distance2first = (distance2first/1000).toFixed(1);
+                if ( 0 < distance2first && distance2first < 60 ) {
+                  rioIcons.iconUrl = 'map_icons/rios_base.png';
+                  rioIcon = L.icon(rioIcons);
+                  rios_cerca++;
+                }
+                marker_popup += '<div class"distance">Distancia al primer río: ' + distance2first + ' KM.</div>';
+                //Set the marker
+                marker.setIcon(rioIcon);
+              }
+              else {
+                  //marker.setIcon(rioIcon);
+              }
+              // Bind a popup to each icon based on the same properties
+              marker.bindPopup( marker_popup );
+            });
+            $('#resultados').append('<p>Cantidad de rios: '+rios+'</p><p>Cantidad de rios cerca: '+rios_cerca+'</p>');
+          });
+        //omnivore.kml('http://user1.itsu.com.uy/capas/disponibilidad.kml').addTo(mymap)
+    });
+</script>
+</html>

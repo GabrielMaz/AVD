@@ -1,0 +1,30 @@
+html,
+body,
+#map-container {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  font-family: sans-serif;
+  background-color: transparent;
+}
+
+.info {
+  padding: 10px 20px;
+  font: 14px/16px Arial, Helvetica, sans-serif;
+  background: white;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+}
+
+.title {
+  font-size: 20px;
+  margin-top: 15px;
+  color: gray;
+}
+
+.subtitle {
+  font-size: 20px;
+  margin-top: 10px;
+  margin: 0 0 5px;
+  color: black;
+}
